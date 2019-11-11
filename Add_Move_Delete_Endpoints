@@ -1,0 +1,260 @@
+import requests
+import base64
+import urllib3
+import json
+import time
+import re
+from getpass import getpass
+
+
+#Suppress insecure request warning
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+#BEGIN GROUP ID VARIABLES
+groupID = "b13d9e90-6d8d-11e5-978e-005056bf2f0a"
+RegisteredDevicesGroup = "b13d9e90-6d8d-11e5-978e-005056bf2f0a"
+workstationGroup = "6f728d30-6d8e-11e5-978e-005056bf2f0a"
+androidGroup = "265079a0-6d8e-11e5-978e-005056bf2f0a"
+guestEndpointGroup = "b1484cf0-6d8d-11e5-978e-005056bf2f0a"
+blackberryGroup = "360c5670-6d8e-11e5-978e-005056bf2f0a"
+blacklistGroup = "b10c7c70-6d8d-11e5-978e-005056bf2f0a"
+profiledGroup = "b132c920-6d8d-11e5-978e-005056bf2f0a"
+sonyGroup = "6bb49ad0-6d8e-11e5-978e-005056bf2f0a"
+vizioGroup = "6eefc8a0-6d8e-11e5-978e-005056bf2f0a"
+#END GROUP ID VARIABLES
+
+
+#BEGIN USER INSTRUCTIONS
+print("1. You must be on the ASU VPN to use this tool")
+print("2. Provide admin credentials for ISE")
+print("3. Provide the MAC address of the device you want to make changes to, format it like so: XX:XX:XX:XX:XX:XX or XXXXXXXXXXXX")
+print()
+username = input("Username: ")
+password = getpass("Password: ")
+mac = input("MAC ADDRESS: " )
+#END USER INSTRUCTIONS
+
+
+#BEGIN INPUT VALIDATION
+MACvalid = False
+if re.match("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", mac.lower()):
+	MACvalid = True
+if MACvalid == False:
+	print("Sorry, that's not a valid MAC Address, please format it like so: XX:XX:XX:XX:XX:XX or XXXXXXXXXXXX")
+	mac = input("MAC ADDRESS: " )
+#END INPUT VALIDATION
+
+
+#BEGIN BACK END VARIABLES
+creds = username + ":" + password
+encodedBytes = base64.b64encode(creds.encode("utf-8"))
+encodedStr = str(encodedBytes, "utf-8")
+get_api_url = "https://10.220.23.11:9060/ers/config/endpoint/name/" + mac
+post_api_url = "https://10.220.23.11:9060/ers/config/endpoint"
+http_headers = {"Authorization": "Basic " + encodedStr, "content-type": "application/json", "accept": "application/json"}
+add_body = {
+	"ERSEndPoint": {
+	"name": mac,
+	"description": "Scripted add by " + username,
+	"mac": mac,
+	"staticProfileAssignment": False,
+	"staticGroupAssignment": True,
+	"groupId": groupID,
+	"identityStore" : "",
+    "identityStoreId" : "f0c0c340-4a2c-11e6-95e3-000c298956ad",
+	"customAttributes": {
+		"customAttributes": {
+			"attr_str": "aaa",
+			"attr_int": "111"
+			}
+		}
+	}
+}
+#END BACK END VARIABLES
+
+
+#GET REQUEST TO GATHER INFO ON MAC ADDRESS
+response = requests.get(url=get_api_url, headers = http_headers, verify=False)
+if response.status_code == 200:
+	#print(response.text)
+	print("------------------------------------------------------------------------------------")
+	print("This MAC is in ISE currently. Try deleting or moving it.")
+	print("------------------------------------------------------------------------------------")
+elif response.status_code == 404:
+	print("------------------------------------------------------------------------------------")
+	print("This MAC is not in ISE, double check that you've spelled it correctly and choose add")
+	print("------------------------------------------------------------------------------------")
+elif response.status_code == 401:
+	print("------------------------------------------------------------------------------------")
+	print("Incorrect username and/or password hit 'ctrl + c' to abort and try again.")
+	print("Try using credentials from ZOHO if issues persist.")
+	print("------------------------------------------------------------------------------------")
+else:
+	print(response.text)
+	print("------------------------------------------------------------------------------------")
+	print("Unknown response, tell Taylor")
+	print("------------------------------------------------------------------------------------")
+#END GET REQUEST
+
+
+#BEGIN FUNCTION SELECTION
+print("Do you want to add, move, or delete?")
+print("1. Add")
+print("2. Move")
+print("3. Delete")
+function_selector = input("Please enter a number, 1 - 3: ")
+#END FUNCTION SELECTION
+
+
+def add_MAC():
+	print("Add to which group?")
+	print("1. RegisteredDevices")
+	print("2. Workstation")
+	print("3. Android")
+	print("4. GuestEndpoints")
+	print("5. Blackberry")
+	print("6. Blacklist")
+	print("7. Profiled")
+	print("8. Sony-Device")
+	print("9. Vizio-Device")
+	groupIDselection = input("Please enter a number, 1 - 9: ")
+	if groupIDselection == "1":
+		groupID = RegisteredDevicesGroup
+	elif groupIDselection == "2":
+		groupID = workstationGroup
+	elif groupIDselection == "3":
+		groupID = androidGroup
+	elif groupIDselection == "4":
+		groupID = guestEndpointGroup
+	elif groupIDselection == "5":
+		groupID = blackberryGroup
+	elif groupIDselection == "6":
+		groupID = blacklistGroup
+	elif groupIDselection == "7":
+		groupID = profiledGroup
+	elif groupIDselection == "8":
+		groupID = sonyGroup
+	elif groupIDselection == "9":
+		groupID = vizioGroup
+	else:
+		groupID = "b13d9e90-6d8d-11e5-978e-005056bf2f0a"
+		print("No group was selected, defaulting to RegisteredDevices")
+	add_body = {
+	"ERSEndPoint": {
+	"name": mac,
+	"description": "Scripted add by " + username,
+	"mac": mac,
+	"staticProfileAssignment": False,
+	"staticGroupAssignment": True,
+	"groupId": groupID,
+	"identityStore" : "",
+   "identityStoreId" : "f0c0c340-4a2c-11e6-95e3-000c298956ad",
+	"customAttributes": {
+		"customAttributes": {
+			"attr_str": "aaa",
+			"attr_int": "111"
+			}
+		}
+	}
+}
+	response = requests.post(url=post_api_url, json=add_body, verify=False, headers=http_headers)
+	if response.status_code == 201:
+		print("Success, " + mac + " has been added to ISE")
+	elif response.status_code == 500:
+		print(mac + " was not added, most likely because it is already there. Check the ISE portal for more detail")
+	elif response.status_code == 401:
+		print("You failed to authenticate, are you using the correct username and password?")
+	elif response.status_code == 400:
+		print("Are you formatting your MAC address correctly? Use this format: XX:XX:XX:XX:XX:XX or XXXXXXXXXXXX")
+	else:
+		print("Tell Taylor")
+		print(response.status_code)
+		print(response.text)
+def move_MAC(groupID = groupID, RegisteredDevicesGroup = RegisteredDevicesGroup, workstationGroup = workstationGroup, androidGroup = androidGroup, guestEndpointGroup = guestEndpointGroup, blackberryGroup = blackberryGroup, blacklistGroup = blacklistGroup, profiledGroup = profiledGroup, sonyGroup = sonyGroup, vizioGroup = vizioGroup, response = response):
+	print("Add to which group?")
+	print("1. RegisteredDevices")
+	print("2. Workstation")
+	print("3. Android")
+	print("4. GuestEndpoints")
+	print("5. Blackberry")
+	print("6. Blacklist")
+	print("7. Profiled")
+	print("8. Sony-Device")
+	print("9. Vizio-Device")
+	groupIDselection = input("Please enter a number, 1 - 9: ")
+	if groupIDselection == "1":
+		groupID = RegisteredDevicesGroup
+	elif groupIDselection == "2":
+		groupID = workstationGroup
+	elif groupIDselection == "3":
+		groupID = androidGroup
+	elif groupIDselection == "4":
+		groupID = guestEndpointGroup
+	elif groupIDselection == "5":
+		groupID = blackberryGroup
+	elif groupIDselection == "6":
+		groupID = blacklistGroup
+	elif groupIDselection == "7":
+		groupID = profiledGroup
+	elif groupIDselection == "8":
+		groupID = sonyGroup
+	elif groupIDselection == "9":
+		groupID = vizioGroup
+	else:
+		print("No group was selected, defaulting to RegisteredDevices")
+		
+	json_response = json.dumps(response.text, indent=4)
+	MACID = json_response[42:78]
+	#print(response.text)
+	#print()
+	#BEGIN PUT BODY
+	body = {
+		"ERSEndPoint": {
+		"id": MACID,
+		"name": mac,
+		"description": "scripted change by " + username,
+		"mac": mac,
+		"profileId": "",
+		"staticProfileAssignment": False,
+		"groupId": groupID,
+		"staticGroupAssignment": True,
+		"portalUser": "",
+		"identityStore": "",
+		"identityStoreId": ""
+		}
+	}
+	#END PUT BODY
+
+	response = requests.put(url="https://10.220.23.11:9060/ers/config/endpoint/" + MACID, headers = http_headers, json = body, verify=False)
+	if response.status_code == 200:
+		print("Success, " + mac + " has been moved.")
+	else:
+		print("Unknown response, use the portal and notify Taylor")
+	#print("Put request status code: " + str(response.status_code))
+	#print(response.text)
+def delete_MAC(response = response):
+	#STORES ENDPOINT'S ERS ID AS MACID
+	json_response = json.dumps(response.text, indent=4)
+	MACID = json_response[42:78]
+	###################################################
+	response = requests.delete(url="https://10.220.23.11:9060/ers/config/endpoint/" + MACID, headers = http_headers, verify=False)
+	#Uncomment for server response code
+	#print("Delete request status code: " + str(response.status_code))
+	if response.status_code == 204:
+		print("Success, " + mac + " has been removed from ISE.")
+	else:
+		print("Unknown response, use the ISE portal and notify Taylor")
+
+if function_selector == "1":
+	add_MAC()
+elif function_selector == "2":
+	move_MAC()
+elif function_selector == "3":
+	delete_MAC()
+else:
+	print("You must choose 1, 2, or 3. The program will exit in ten seconds.")
+	#print("Hit 'ctrl + c' to exit now.")
+	
+#SO THE PROGRAM DOESN'T JUST DISSAPEAR ON THE USER
+print("hit 'ctrl + c' to exit")
+time.sleep(10)
