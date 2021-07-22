@@ -225,7 +225,7 @@ def move_MAC(groupID = groupID, RegisteredDevicesGroup = RegisteredDevicesGroup,
 	}
 	#END PUT BODY
 
-	response = requests.put(url="https://10.220.23.11:9060/ers/config/endpoint/" + MACID, headers = http_headers, json = body, verify=False)
+	response = requests.put(url="https://INSERTIP:9060/ers/config/endpoint/" + MACID, headers = http_headers, json = body, verify=False)
 	if response.status_code == 200:
 		print("Success, " + mac + " has been moved.")
 	else:
@@ -237,7 +237,7 @@ def delete_MAC(response = response):
 	json_response = json.dumps(response.text, indent=4)
 	MACID = json_response[42:78]
 	###################################################
-	response = requests.delete(url="https://10.220.23.11:9060/ers/config/endpoint/" + MACID, headers = http_headers, verify=False)
+	response = requests.delete(url="https://INSERTIP:9060/ers/config/endpoint/" + MACID, headers = http_headers, verify=False)
 	#Uncomment for server response code
 	#print("Delete request status code: " + str(response.status_code))
 	if response.status_code == 204:
