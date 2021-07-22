@@ -25,7 +25,7 @@ vizioGroup = "6eefc8a0-6d8e-11e5-978e-005056bf2f0a"
 
 
 #BEGIN USER INSTRUCTIONS
-print("1. You must be on the ASU VPN to use this tool")
+print("1. You must be on the VPN to use this tool")
 print("2. Provide admin credentials for ISE")
 print("3. Provide the MAC address of the device you want to make changes to, format it like so: XX:XX:XX:XX:XX:XX or XXXXXXXXXXXX")
 print()
@@ -49,8 +49,8 @@ if MACvalid == False:
 creds = username + ":" + password
 encodedBytes = base64.b64encode(creds.encode("utf-8"))
 encodedStr = str(encodedBytes, "utf-8")
-get_api_url = "https://10.220.23.11:9060/ers/config/endpoint/name/" + mac
-post_api_url = "https://10.220.23.11:9060/ers/config/endpoint"
+get_api_url = "https://INSERTIP:9060/ers/config/endpoint/name/" + mac
+post_api_url = "https://INSERTIP:9060/ers/config/endpoint"
 http_headers = {"Authorization": "Basic " + encodedStr, "content-type": "application/json", "accept": "application/json"}
 add_body = {
 	"ERSEndPoint": {
@@ -225,7 +225,7 @@ def move_MAC(groupID = groupID, RegisteredDevicesGroup = RegisteredDevicesGroup,
 	}
 	#END PUT BODY
 
-	response = requests.put(url="https://10.220.23.11:9060/ers/config/endpoint/" + MACID, headers = http_headers, json = body, verify=False)
+	response = requests.put(url="https://INSERTIP:9060/ers/config/endpoint/" + MACID, headers = http_headers, json = body, verify=False)
 	if response.status_code == 200:
 		print("Success, " + mac + " has been moved.")
 	else:
@@ -237,7 +237,7 @@ def delete_MAC(response = response):
 	json_response = json.dumps(response.text, indent=4)
 	MACID = json_response[42:78]
 	###################################################
-	response = requests.delete(url="https://10.220.23.11:9060/ers/config/endpoint/" + MACID, headers = http_headers, verify=False)
+	response = requests.delete(url="https://INSERTIP:9060/ers/config/endpoint/" + MACID, headers = http_headers, verify=False)
 	#Uncomment for server response code
 	#print("Delete request status code: " + str(response.status_code))
 	if response.status_code == 204:
